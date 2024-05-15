@@ -1,0 +1,106 @@
+---
+title: "Análisis de datos de pacientes cardíacos"
+author: "Kevin Córdoba Leitón"
+institute: "Universidad de Costa Rica"
+date: "2024-5-15"
+format: html
+editor: visual
+lang: es
+toc: true
+theme: Lux
+warning: false
+---
+
+# Introducción
+
+Las enfermedades cardiovasculares constituyen una de las principales causas de mortalidad en todo el mundo, destacándose principalmente por infartos de miocardio y fallas cardíacas. En este contexto, la disponibilidad de registros médicos electrónicos proporciona una valiosa fuente de información para comprender y abordar estas enfermedades de manera más efectiva. Investigaciones recientes, como la realizada por Davide Chicco y Giuseppe Jurman, han explorado cómo las técnicas de aprendizaje automático pueden aprovechar estos datos para predecir la supervivencia de pacientes con falla cardíaca.
+
+El estudio de Chicco y Jurman analiza específicamente la capacidad predictiva de modelos de aprendizaje automático utilizando únicamente dos variables: creatinina sérica y fracción de eyección. Estos resultados prometedores sugieren que, incluso con un conjunto de datos limitado, es posible identificar patrones que pueden mejorar significativamente la gestión y el tratamiento de pacientes con enfermedades cardíacas. En esta investigación, nos sumergimos en el potencial de estas técnicas para ofrecer avances en el campo de la medicina cardiovascular y mejorar los resultados clínicos para los pacientes afectados. Además, se presentarán tablas con los diferentes datos obtenidos del estudio, proporcionando una visión más detallada de los hallazgos.
+
+# Carga de paquetes
+
+```{r}
+library(tidyverse) 
+library(readr) 
+library(tidyr) 
+library(knitr) 
+```
+
+# Carga de datos
+
+```{r}
+datoscorazon <- read.csv("C:\\Users\\User\\OneDrive\\Escritorio\\Tarea_3_Proce\\heart_failure_clinical_records_dataset.csv")
+```
+
+# Tablas
+
+## Consulta 1
+
+Tabla para los hombres mayores de 70 años, diabéticos y no anémicos muestre, en orden descendente de edad, las columnas correspondientes a:Sexo, Edad, Diabetes, Anemia y Presión arterial alta.
+
+```{r}
+#| label: Select (sexo, años, diabetes, anemia y presion arterial alta)
+
+calcular_puntaje_riesgo <- function(diabetes, anemia, high_blood_pressure) {
+  puntaje <- 0
+  puntaje <- puntaje + ifelse(diabetes == 1, 1, 0)  # 1 punto por diabetes
+  puntaje <- puntaje + ifelse(anemia == 1, 1, 0)    # 1 punto por anemia
+  puntaje <- puntaje + ifelse(high_blood_pressure == 1, 1, 0)  # 1 punto por hipertensión
+  return(puntaje)
+}
+
+# Filtrar hombres mayores de 70 años, diabéticos y no anémicos
+datoscorazon |>
+  filter(sex == "1" , age > 70, diabetes == 1, anaemia == 0) |>
+  mutate(riesgo_cardiovascular = calcular_puntaje_riesgo(diabetes, anaemia, high_blood_pressure)) |>  
+  select(sex, age, diabetes, anaemia, high_blood_pressure, riesgo_cardiovascular) |>
+  arrange(desc(age)) |>
+  rename(Sexo = sex, Edad = age, Diabetes = diabetes, Anemia = anaemia, `Presión arterial alta` = high_blood_pressure, `Riesgo Cardiovascular` = riesgo_cardiovascular) |>
+  kable()
+
+```
+
+## Consulta 2
+
+Tabla que muestre para todas las mujeres con fracción de eyección entre 20 (inclusive) y 25 (inclusive), en orden descendente de fracción de eyección, las columnas correspondientes a: Sexo, Fracción de eyección, Anemia y Diabetes.
+
+```{r}
+#| label: Select (Sexo, Fracción de eyección, Anemia y Diabetes)
+  datoscorazon |>
+  filter(sex == "0", ejection_fraction >= 20, ejection_fraction <= 25) |>
+  select(sex, ejection_fraction, anaemia, diabetes) |>
+  arrange(desc(ejection_fraction)) |>
+  rename(Sexo = sex, Fracción_de_eyección = ejection_fraction, Diabetes = diabetes, Anemia = anaemia) |>
+  kable()
+
+
+```
+
+## Consulta 3
+
+Tabla que muestre el promedio de creatinina sérica de pacientes sobrevivientes y de pacientes fallecidos.
+
+```{r}
+#| label: Promedio de creatinina sérica en sobrevivientes y fallecidos
+
+datoscorazon |>
+  group_by(DEATH_EVENT) |>
+  summarise(serum_creatinine_mean = mean(serum_creatinine)) |>
+  rename("Condición" = DEATH_EVENT, "Promedio de creatinina sérica en sobrevivientes y fallecidos" = serum_creatinine_mean) |>
+  kable()
+
+```
+
+## Consulta 4
+
+Tabla que muestre el valor máximo de creatinina sérica de las mujeres que son anémicas o diabéticas.
+
+```{r}
+datoscorazon |>
+  filter(sex == "0" & (anaemia == 1 | diabetes == 1)) |>
+  summarise(serum_creatinine_max = max(serum_creatinine)) |>
+  rename("Máximo de creatinina sérica en mujeres con diabetes o anémicas" = serum_creatinine_max) |>
+  kable()
+
+
+```
